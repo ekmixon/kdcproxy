@@ -99,7 +99,7 @@ def decode_proxymessage(data):
         try:  # Python 3.x
             realm = str(realm, "utf-8")
         except TypeError:  # Python 2.x
-            realm = str(realm)
+            realm = realm
     else:
         realm = None
     flags = req.getComponentByName('flags')

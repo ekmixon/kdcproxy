@@ -65,9 +65,9 @@ class KDCProxyConfig(IConfig):
         try:
             mod = self.__cp.get(self.GLOBAL, "configs")
             try:
-                importlib.import_module("kdcproxy.config." + mod)
+                importlib.import_module(f"kdcproxy.config.{mod}")
             except ImportError as e:
-                logging.log(logging.ERROR, "Error reading config: %s" % e)
+                logging.log(logging.ERROR, f"Error reading config: {e}")
         except configparser.Error:
             pass
 
@@ -89,7 +89,7 @@ class KDCProxyConfig(IConfig):
 class DNSResolver(IResolver):
 
     def __dns(self, service, protocol, realm):
-        query = '_%s._%s.%s' % (service, protocol, realm)
+        query = f'_{service}._{protocol}.{realm}'
 
         try:
             reply = dns.resolver.query(query, dns.rdatatype.SRV)
@@ -126,7 +126,7 @@ class MetaResolver(IResolver):
         self.__resolvers = []
         for i in itertools.count(0):
             allsub = IConfig.__subclasses__()
-            if not i < len(allsub):
+            if i >= len(allsub):
                 break
 
             try:
@@ -160,8 +160,7 @@ class MetaResolver(IResolver):
 
     def lookup(self, realm, kpasswd=False):
         for r in self.__resolvers:
-            servers = tuple(self.__unique(r.lookup(realm, kpasswd)))
-            if servers:
+            if servers := tuple(self.__unique(r.lookup(realm, kpasswd))):
                 return servers
 
         return ()

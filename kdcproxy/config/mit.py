@@ -48,9 +48,12 @@ else:
         def from_param(cls, value):
             if value is None:
                 return None
-            if PY3 and isinstance(value, str):
-                return value.encode('utf-8')
-            elif not PY3 and isinstance(value, unicode):  # noqa
+            if (
+                PY3
+                and isinstance(value, str)
+                or not PY3
+                and isinstance(value, unicode)
+            ):
                 return value.encode('utf-8')
             elif not isinstance(value, bytes):
                 raise TypeError(value)
@@ -252,11 +255,11 @@ class MITConfig(IConfig):
                     parsed = urlparse.urlparse(hostport)
                     if parsed.hostname is None:
                         scheme = {'kdc': 'kerberos'}.get(server, 'kpasswd')
-                        parsed = urlparse.urlparse(scheme + "://" + hostport)
+                        parsed = urlparse.urlparse(f"{scheme}://{hostport}")
 
                     if parsed.port is not None and server == 'admin_server':
                         hostport = hostport.split(':', 1)[0]
-                        parsed = urlparse.urlparse("kpasswd://" + hostport)
+                        parsed = urlparse.urlparse(f"kpasswd://{hostport}")
 
                     rconf.setdefault(server, []).append(parsed.geturl())
 

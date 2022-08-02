@@ -34,7 +34,7 @@ class ProxyRequest(object):
         request, realm, _ = asn1mod.decode_proxymessage(data)
 
         # Check the length of the whole request message.
-        (length, ) = struct.unpack("!I", request[0:4])
+        (length, ) = struct.unpack("!I", request[:4])
         if length + 4 != len(request):
             raise ParsingError("Invalid request length.")
 
@@ -86,7 +86,7 @@ class KPASSWDProxyRequest(ProxyRequest):
         # actually is a password change request.  Officially we support version
         # 1, but 0xff80 is used for set-password, so try to accept that, too.
         (version, ) = struct.unpack("!H", request[6:8])
-        if version != 0x0001 and version != 0xff80:
+        if version not in [0x0001, 0xFF80]:
             raise ParsingError("The KPASSWD request is an incorrect version.")
 
         # Read the length of the AP-REQ part of the change request.  There

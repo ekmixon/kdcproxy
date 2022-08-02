@@ -74,10 +74,7 @@ class Application:
     def __await_reply(self, pr, rsocks, wsocks, timeout):
         extra = 0
         read_buffers = {}
-        while (timeout + extra) > time.time():
-            if not wsocks and not rsocks:
-                break
-
+        while (timeout + extra) > time.time() and not (not wsocks and not rsocks):
             r, w, x = select.select(rsocks, wsocks, rsocks + wsocks,
                                     (timeout + extra) - time.time())
             for sock in x:
@@ -154,7 +151,7 @@ class Application:
             return None
 
         # Got enough data to check if we have the full package.
-        (length, ) = struct.unpack("!I", reply[0:4])
+        (length, ) = struct.unpack("!I", reply[:4])
         if length + 4 == len(reply):
             read_buffers.pop(sock)
             return reply
@@ -168,10 +165,7 @@ class Application:
         if addr[1] not in (socket.SOCK_STREAM, socket.SOCK_DGRAM):
             return False
 
-        if addr[2] not in (socket.IPPROTO_TCP, socket.IPPROTO_UDP):
-            return False
-
-        return True
+        return addr[2] in (socket.IPPROTO_TCP, socket.IPPROTO_UDP)
 
     def sock_type(self, sock):
         try:
@@ -184,15 +178,13 @@ class Application:
             # Validate the method
             method = env["REQUEST_METHOD"].upper()
             if method != "POST":
-                raise HTTPException(405, "Method not allowed (%s)." % method)
+                raise HTTPException(405, f"Method not allowed ({method}).")
 
             # Parse the request
             length = -1
             try:
                 length = int(env["CONTENT_LENGTH"])
-            except KeyError:
-                pass
-            except ValueError:
+            except (KeyError, ValueError):
                 pass
             if length < 0:
                 raise HTTPException(411, "Length required.")
@@ -242,7 +234,7 @@ class Application:
                     if addr is not None:
                         # Bypass unspecified socktypes
                         if len(scheme) > 1 and \
-                           addr[1] != self.SOCKTYPES[scheme[1]]:
+                               addr[1] != self.SOCKTYPES[scheme[1]]:
                             continue
 
                         # Create the socket
@@ -282,7 +274,7 @@ class Application:
                 sock.close()
 
             if reply is None:
-                raise HTTPException(503, "Remote unavailable (%s)." % pr)
+                raise HTTPException(503, f"Remote unavailable ({pr}).")
 
             # Return the result to the client
             raise HTTPException(200, codec.encode(reply),
